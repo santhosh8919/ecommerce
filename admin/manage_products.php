@@ -1,12 +1,16 @@
 <?php
-include '../includes/db.php';
 session_start();
+include '../includes/db.php';
+
+// Redirect if not logged in as admin
 if (!isset($_SESSION['admin_id'])) {
     header("Location: login.php");
     exit();
 }
 
-$stmt = $conn->query("SELECT * FROM products");
+// Fetch products securely using prepared statements
+$stmt = $conn->prepare("SELECT * FROM products");
+$stmt->execute();
 $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
@@ -60,17 +64,27 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             background-color: #f1f1f1;
         }
         .actions a {
-            margin: 0 10px;
-            padding: 5px 10px;
-            color: #007bff;
-            text-decoration: none;
-            border: 1px solid #007bff;
-            border-radius: 4px;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        .actions a:hover {
-            background-color: #007bff;
+            margin: 0 5px;
+            padding: 6px 12px;
             color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+        .edit-btn {
+            background-color: #007bff;
+            border: 1px solid #007bff;
+        }
+        .edit-btn:hover {
+            background-color: #0056b3;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+        .delete-btn:hover {
+            background-color: #a71d2a;
         }
         .btn-back {
             display: block;
@@ -106,18 +120,27 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <?php foreach ($products as $product) : ?>
             <tr>
-                <td><?= $product['id']; ?></td>
+                <td><?= htmlspecialchars($product['id']); ?></td>
                 <td><?= htmlspecialchars($product['name']); ?></td>
                 <td>$<?= number_format($product['price'], 2); ?></td>
                 <td><?= htmlspecialchars($product['description']); ?></td>
-                <td><img src="../images/<?= htmlspecialchars($product['image']); ?>" alt="Product Image"></td>
+                <td>
+                    <?php if (!empty($product['image']) && file_exists("../images/" . $product['image'])) : ?>
+                        <img src="../images/<?= htmlspecialchars($product['image']); ?>" alt="Product Image">
+                    <?php else : ?>
+                        <span>No Image</span>
+                    <?php endif; ?>
+                </td>
                 <td class="actions">
-                    <a href="edit_product.php?id=<?= $product['id']; ?>">Edit</a>
-                    <a href="delete_product.php?id=<?= $product['id']; ?>" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
+                    <a href="edit_product.php?id=<?= htmlspecialchars($product['id']); ?>" class="edit-btn">Edit</a>
+                    <a href="delete_product.php?id=<?= htmlspecialchars($product['id']); ?>" 
+                       class="delete-btn" 
+                       onclick="return confirm('Are you sure you want to delete this product?');">
+                       Delete
+                    </a>
                 </td>
             </tr>
         <?php endforeach; ?>
-
     </table>
 
     <a href="dashboard.php" class="btn-back">Back to Dashboard</a>
